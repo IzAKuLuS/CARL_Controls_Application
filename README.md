@@ -36,9 +36,3 @@ README. With ROS and both workspace overlays sourced:
 ros2 launch carl_joystick joystick.launch.py \
   controls_dir:=/home/izakulus/Documents/AVL/CARL_Controls_Application/src
 ```
-
-
-The phone shows last reply latency, input pauses and reconnect attempts for the
-page lifetime. `/health` and joystick server logs report readiness/stop reasons
-and session closures. The existing browser passcode is an admission
-screen; the joystick service currently assumes a trusted vehicle network.
