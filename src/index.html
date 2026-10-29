@@ -1,0 +1,42 @@
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en" class="auth-pending">
+<head>
+    <meta charset="UTF-8">
+
+    <!-- Make the page fit phone and computer screens. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>CARL Controls</title>
+
+    <!-- All three pages share this stylesheet. -->
+    <link rel="stylesheet" href="styles.css">
+    <!-- Check access before revealing a protected screen. -->
+    <script src="passcodes.js" defer></script>
+    <script src="auth.js" defer></script>
+</head>
+
+<body>
+    <main class="selection">
+        <h1>CARL Controls</h1>
+        <p>Select an option.</p>
+
+        <nav class="choices" aria-label="Application modes">
+            <!-- Links navigate between pages without JavaScript. -->
+            <a class="button" href="telemetry.html">
+                Telemetry only
+            </a>
+
+            <a class="button" href="joystick.html">
+                Joystick
+            </a>
+        </nav>
+
+        <button id="sign-out" class="button" type="button">Sign out</button>
+    </main>
+</body>
+</html>

@@ -1,0 +1,42 @@
+
+
+<!DOCTYPE html>
+<html lang="en" class="auth-pending">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>CARL Telemetry</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Check access before revealing a protected screen. -->
+    <script src="passcodes.js" defer></script>
+    <script src="auth.js" defer></script>
+
+    <!-- defer runs the script after the HTML has been read. -->
+    <script src="ros-client.js" defer></script>
+    <script src="app.js" defer></script>
+</head>
+
+<body>
+    <main>
+        <header class="page-header">
+            <a class="button" href="index.html">Back</a>
+            <h1>CARL Telemetry</h1>
+        </header>
+
+        <form id="ros-connection-form" class="ros-connection-form">
+            <label for="rosbridge-url">rosbridge WebSocket address</label>
+            <input id="rosbridge-url" type="url" required spellcheck="false" placeholder="ws://localhost:9090">
+            <div class="connection-actions">
+                <button class="button" type="submit">Connect</button>
+                <button id="ros-disconnect" class="button" type="button">Disconnect</button>
+            </div>
+        </form>
+        <p id="ros-connection-status" role="status">Not connected</p>
+        <p id="carl-connection-status">CARL heartbeat: unknown</p>
+
+        <!-- app.js creates the telemetry sections inside this element. -->
+        <div id="telemetry-sections"></div>
+    </main>
+</body>
+</html>

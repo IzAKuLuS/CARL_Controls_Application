@@ -1,0 +1,80 @@
+
+
+
+
+<!DOCTYPE html>
+<html lang="en" class="auth-pending">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>CARL Joystick</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Check access before revealing a protected screen. -->
+    <script src="passcodes.js" defer></script>
+    <script src="auth.js" defer></script>
+
+    <!-- This is the joystick library used by the MARVIN application. -->
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.2/nipplejs.min.js"
+        defer>
+    </script>
+
+    <!-- Deferred scripts execute in their listed order. -->
+    <script src="ros-client.js" defer></script>
+    <script src="app.js" defer></script>
+    <script src="joystick-client.js" defer></script>
+    <script src="joystick-ui.js" defer></script>
+</head>
+
+<body>
+    <main>
+        <header class="page-header">
+            <a class="button" href="index.html">Back</a>
+            <h1>CARL Joystick</h1>
+        </header>
+
+        <p>Hold the joystick to drive. Up is forward, down is reverse, and right turns right.
+            Release to command zero. CARL coasts when motor output is zero.</p>
+        <form id="joystick-connection-form" class="ros-connection-form">
+            <label for="joystick-url">Joystick server WebSocket address</label>
+            <input id="joystick-url" type="url" required spellcheck="false" placeholder="ws://localhost:8001/ws">
+            <div class="connection-actions">
+                <button class="button" type="submit">Connect joystick</button>
+                <button id="joystick-disconnect" class="button" type="button">Disconnect joystick</button>
+            </div>
+        </form>
+        <p id="joystick-status" role="status">Joystick disconnected. Connect to drive.</p>
+        <p id="joystick-link">Last reply: — ms · Input pauses: 0 · Reconnect attempts: 0</p>
+        <div class="connection-actions">
+            <button id="joystick-estop" class="button estop" type="button" disabled>E-STOP</button>
+            <button id="joystick-reset-estop" class="button" type="button" disabled>Reset e-stop</button>
+        </div>
+
+        <!-- The library draws the joystick inside this area. -->
+        <div id="joystick-zone" aria-label="Touch joystick"></div>
+
+        <!-- These numbers show input only, not vehicle measurements. -->
+        <p class="joystick-values">
+            Horizontal: <span id="joystick-x">0.00</span>
+            |
+            Vertical: <span id="joystick-y">0.00</span>
+        </p>
+
+        <h2>CARL telemetry</h2>
+        <p>Telemetry and joystick connections are independent. Joystick driving requires
+            the server to receive live CARL heartbeat and motor status.</p>
+        <form id="ros-connection-form" class="ros-connection-form">
+            <label for="rosbridge-url">rosbridge WebSocket address</label>
+            <input id="rosbridge-url" type="url" required spellcheck="false" placeholder="ws://localhost:9090">
+            <div class="connection-actions">
+                <button class="button" type="submit">Connect</button>
+                <button id="ros-disconnect" class="button" type="button">Disconnect</button>
+            </div>
+        </form>
+        <p id="ros-connection-status" role="status">Not connected</p>
+        <p id="carl-connection-status">CARL heartbeat: unknown</p>
+        <div id="telemetry-sections"></div>
+    </main>
+</body>
+</html>

@@ -1,0 +1,180 @@
+
+
+
+
+
+/* Include padding and borders within an element's specified width. */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background-color: #000;
+    color: #fff;
+    font-family: Arial, sans-serif;
+}
+
+/* Keep content readable on large screens and padded on small screens. */
+main {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 24px;
+}
+
+h1 {
+    margin: 0;
+    font-size: 28px;
+}
+
+p {
+    line-height: 1.5;
+}
+
+/* Style navigation links as grey buttons. */
+.button {
+    display: inline-block;
+    padding: 14px 24px;
+    border: 1px solid #777;
+    border-radius: 4px;
+    background-color: #444;
+    color: #fff;
+    text-decoration: none;
+    text-align: center;
+}
+
+.button:hover {
+    background-color: #555;
+}
+
+/* Keep keyboard navigation visible. */
+.button:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 4px;
+}
+
+/* Center the initial selection screen vertically and horizontally. */
+.selection {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.choices {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+    max-width: 300px;
+    margin-top: 16px;
+}
+
+.page-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 24px;
+}
+
+/* Separate telemetry groups without adding decorative styling. */
+.telemetry-section {
+    border: 1px solid #555;
+    padding: 16px;
+    margin-top: 20px;
+}
+
+.telemetry-section h2 {
+    margin-top: 0;
+    font-size: 20px;
+}
+
+/* Allow long ROS topic names to wrap on narrow screens. */
+.topic {
+    overflow-wrap: anywhere;
+}
+
+.telemetry-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 0;
+    border-top: 1px solid #333;
+}
+
+.telemetry-row dt,
+.telemetry-row dd {
+    margin: 0;
+}
+
+/* Give the joystick a square area that also fits a phone screen. */
+#joystick-zone {
+    position: relative;
+    width: min(100%, 360px);
+    aspect-ratio: 1;
+    margin: 32px auto;
+    border: 1px solid #555;
+    background-color: #111;
+
+    /* Touching the joystick should move it instead of scrolling the page. */
+    touch-action: none;
+}
+
+.joystick-values {
+    text-align: center;
+}
+
+
+/* Keep protected screens hidden until auth.js has checked this tab's session. */
+.auth-pending body { visibility: hidden; }
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 100%;
+    max-width: 300px;
+    margin-top: 16px;
+    text-align: left;
+}
+.login-form input {
+    width: 100%;
+    padding: 14px;
+    border: 1px solid #777;
+    border-radius: 4px;
+    background: #222;
+    color: #fff;
+    font: inherit;
+    letter-spacing: 4px;
+}
+button.button { font: inherit; cursor: pointer; }
+button.button:disabled, .login-form input:disabled { opacity: .5; cursor: not-allowed; }
+.login-form input:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+#login-message, #cooldown { max-width: 440px; min-height: 24px; margin-bottom: 0; }
+.login-note { font-size: 14px; }
+#sign-out { margin-top: 24px; }
+
+.ros-connection-form { display: grid; gap: 12px; margin-top: 24px; }
+.ros-connection-form input {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #777;
+    background: #222;
+    color: #fff;
+    font: inherit;
+}
+.ros-connection-form input:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+.connection-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.telemetry-section[data-state="live"] { border-left: 4px solid #72ca96; }
+.telemetry-section[data-state="stale"] { border-left: 4px solid #ecc66c; }
+[data-state="live"]#ros-connection-status,
+[data-state="live"]#carl-connection-status { color: #72ca96; }
+.telemetry-row dd { overflow-wrap: anywhere; max-width: 100%; }
+.telemetry-section pre { overflow: auto; max-height: 360px; background: #181818; padding: 12px; }
+.telemetry-section summary { cursor: pointer; }
+.estop { background: #a51b1b; border-color: #ff7777; font-weight: bold; }
+.estop:hover { background: #c42525; }
