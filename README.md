@@ -1,4 +1,5 @@
 # CARL Controls Application
+> Authored by Isaac Alvarado
 
 Browser telemetry and touch joystick control for CARL. Both mode pages receive
 live ROS 2 telemetry through rosbridge. Joystick commands use the CARL-specific
