@@ -3,6 +3,15 @@ const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const Client = require("../src/joystick-client.js");
 
+test("joystick addresses are validated without the ROS client", () => {
+    assert.equal(Client.endpoint("ws://localhost:8001/ws", "http:"), "ws://localhost:8001/ws");
+    assert.equal(Client.endpoint("wss://carl.test/ws", "https:"), "wss://carl.test/ws");
+    for (const value of ["not a URL", "http://carl.test/ws", "ws://user:secret@carl.test/ws", "ws://carl.test/ws#fragment"]) {
+        assert.throws(() => Client.endpoint(value, "http:"));
+    }
+    assert.throws(() => Client.endpoint("ws://carl.test/ws", "https:"), /secure wss:\/\/ joystick/);
+});
+
 function setup() {
     let now = 0;
     const sockets = [], states = [], timers = new Map();
@@ -60,6 +69,31 @@ test("release queues neutral behind in-flight input and sends immediately on ack
     assert.equal(s.socket.sent.length, 2);
     s.socket.reply({active: true});
     assert.deepEqual(s.socket.sent.at(-1), {type: "control", x: 0, y: 0, deadman: false, token: "0123456789abcdef"});
+});
+
+test("retouch cannot overwrite queued neutral or drive before its acknowledgement", () => {
+    const s = setup();
+    s.socket.reply(); s.client.begin(); s.client.move(0, 1); s.advance(50);
+    s.client.release("pointercancel");
+    assert.equal(s.client.begin(), false); // Drive packet still in flight.
+    s.client.move(0, 1);
+    s.socket.reply({active: true});
+    assert.equal(s.socket.sent.at(-1).deadman, false);
+    assert.equal(s.client.begin(), false); // Neutral packet still in flight.
+    s.socket.reply({active: false});
+    assert.equal(s.client.begin(), true);
+});
+
+test("an idle keepalive in flight does not block first touch after confirmed neutral", () => {
+    const s = setup(); s.socket.reply({active: false});
+    s.advance(50); // Another neutral keepalive is now awaiting its reply.
+    assert.equal(s.client.begin(), true);
+    s.client.move(0, 1); s.socket.reply({active: false});
+    s.advance(50); assert.equal(s.socket.sent.at(-1).deadman, true);
+    s.client.release(); assert.equal(s.client.begin(), false);
+    s.socket.reply({active: true}); assert.equal(s.socket.sent.at(-1).deadman, false);
+    assert.equal(s.client.begin(), false);
+    s.socket.reply({active: false}); assert.equal(s.client.begin(), true);
 });
 
 test("missing telemetry and server neutral requirement release input without an ack loop", () => {
@@ -235,4 +269,26 @@ test("a late reply arriving before the timer still cancels old movement", () => 
     s.elapse(200); s.socket.reply({active: true});
     assert.equal(s.client.held, false);
     assert.equal(s.socket.sent.at(-1).deadman, false);
+});
+
+test("an event-loop stall requires fresh contact even if the last reply was healthy", () => {
+    const s = setup(); s.socket.reply(); s.client.begin(); s.client.move(0, 1);
+    s.advance(50); s.socket.reply({active: true});
+    s.advance(200);
+    assert.equal(s.client.held, false);
+    assert.equal(s.socket.sent.at(-1).deadman, false);
+    s.socket.reply({active: false});
+    s.client.move(0, 1); s.advance(50);
+    assert.equal(s.socket.sent.at(-1).deadman, false);
+});
+
+test("contact guard failure and exceptions fail closed before transmitting a held command", () => {
+    for (const guard of [() => false, () => { throw new Error("Capture query failed"); }]) {
+        const s = setup(); s.socket.reply(); s.client.begin(); s.client.move(0, 1);
+        s.client.isInputActive = guard;
+        s.advance(50);
+        assert.equal(s.client.held, false);
+        assert.equal(s.socket.sent.at(-1).deadman, false);
+        assert.equal(s.socket.sent.at(-1).x, 0); assert.equal(s.socket.sent.at(-1).y, 0);
+    }
 });

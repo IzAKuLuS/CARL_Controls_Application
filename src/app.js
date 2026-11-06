@@ -5,6 +5,20 @@
 
 "use strict";
 
+const finite = (value) => typeof value === "number" && Number.isFinite(value);
+const vector = (value) => value && [value.x, value.y, value.z].every(finite);
+const measurement = (unit) => (value) => finite(value) ? `${value.toFixed(3)} ${unit}` : "Not provided";
+function imuHealth(message) {
+    if (typeof message.data !== "string" || message.data.length > 4096) throw new Error("Invalid diagnostic payload");
+    const data = JSON.parse(message.data);
+    if (!data || Array.isArray(data) || data.schema !== 1 || typeof data.ready !== "boolean"
+        || !Number.isInteger(data.error_count) || data.error_count < 0 || data.error_count > 65535
+        || ![data.sensor, data.stage, data.error].every((v) => typeof v === "string" && v.length <= 64)) {
+        throw new Error("Invalid diagnostic fields");
+    }
+    return data;
+}
+
 // CARL's ROS 2 topic catalog. Field paths preserve the ROS message names.
 const telemetryGroups = [
     {
@@ -38,26 +52,30 @@ const telemetryGroups = [
         ]
     },
     {
-        title: "IMU",
-        topic: "/carl/imu",
-        type: "sensor_msgs/msg/Imu",
+        title: "IMU motion", topic: "/carl/imu", type: "sensor_msgs/msg/Imu", staleMs: 500,
+        validate: (message) => vector(message.linear_acceleration) && vector(message.angular_velocity),
+        note: "Sensor axes. Acceleration includes gravity. The current MPU stream does not estimate orientation or heading.",
         fields: [
-            ["Orientation quaternion — X, Y, Z, W", "orientation"],
-            ["Angular velocity — X, Y, Z (rad/s)", "angular_velocity"],
-            ["Linear acceleration — X, Y, Z (m/s²)", "linear_acceleration"],
-            ["Orientation covariance", "orientation_covariance"],
-            ["Angular velocity covariance", "angular_velocity_covariance"],
-            ["Linear acceleration covariance", "linear_acceleration_covariance"]
+            ["Acceleration X", "linear_acceleration.x", measurement("m/s²")],
+            ["Acceleration Y", "linear_acceleration.y", measurement("m/s²")],
+            ["Acceleration Z", "linear_acceleration.z", measurement("m/s²")],
+            ["Gyro X", "angular_velocity.x", measurement("rad/s")],
+            ["Gyro Y", "angular_velocity.y", measurement("rad/s")],
+            ["Gyro Z", "angular_velocity.z", measurement("rad/s")]
         ]
     },
     {
-        title: "IMU temperature",
-        topic: "/carl/imu/temperature",
-        type: "sensor_msgs/msg/Temperature",
-        fields: [
-            ["Temperature (°C)", "temperature"],
-            ["Temperature variance (°C²)", "variance"]
-        ]
+        title: "IMU temperature", topic: "/carl/imu/temperature", type: "sensor_msgs/msg/Temperature",
+        validate: (message) => finite(message.temperature) && message.temperature >= -273.15,
+        note: "Sensor die temperature, not ambient air temperature.",
+        fields: [["IMU die temperature", "temperature", measurement("°C")]]
+    },
+    {
+        title: "IMU health", topic: "/carl/imu/diagnostics", type: "std_msgs/msg/String", staleMs: 2500,
+        decode: imuHealth, header: false, isFault: (message) => message.error !== "ok",
+        note: "The error count is cumulative since STM32 restart; old errors do not necessarily indicate a current fault.",
+        fields: [["Sensor model", "sensor"], ["Interface", "interface"], ["Sensor stage", "stage"],
+            ["Ready", "ready", (v) => v ? "Yes" : "No"], ["Sensor error", "error"], ["Sensor error count", "error_count"]]
     }
 ];
 
@@ -80,8 +98,8 @@ if (telemetryContainer) {
         const values = document.createElement("dl");
         const fieldViews = [];
 
-        for (const [labelText, path, names] of [...group.fields,
-            ["ROS message timestamp", "header.stamp"], ["Frame ID", "header.frame_id"]]) {
+        for (const [labelText, path, names] of [...group.fields, ...(group.header === false ? [] :
+            [["ROS message timestamp", "header.stamp"], ["Frame ID", "header.frame_id"]])]) {
             const row = document.createElement("div");
             row.className = "telemetry-row";
 
@@ -107,9 +125,15 @@ if (telemetryContainer) {
         raw.textContent = "No message received";
         details.append(summary, raw);
         section.append(heading, topic, health, values, details);
+        if (group.note) {
+            const note = document.createElement("p");
+            note.className = "telemetry-note";
+            note.textContent = group.note;
+            section.append(note);
+        }
         telemetryContainer.append(section);
-        views.set(group.topic, { section, health, raw, fieldViews,
-            count: 0, message: null, receivedAt: null, error: null });
+        views.set(group.topic, { group, section, health, raw, fieldViews,
+            count: 0, message: null, rawMessage: null, receivedAt: null, error: null, dataError: null });
     }
 
     const form = document.getElementById("ros-connection-form");
@@ -128,9 +152,11 @@ if (telemetryContainer) {
     function clearMessages() {
         for (const view of views.values()) {
             view.message = null;
+            view.rawMessage = null;
             view.receivedAt = null;
             view.count = 0;
             view.error = null;
+            view.dataError = null;
         }
     }
 
@@ -146,10 +172,23 @@ if (telemetryContainer) {
         },
         onMessage(topic, message) {
             const view = views.get(topic);
-            view.message = message;
+            if (!view) return;
+            let decoded;
+            try {
+                decoded = view.group.decode ? view.group.decode(message) : message;
+                if (view.group.validate && !view.group.validate(decoded)) throw new Error("Invalid sensor fields");
+            } catch {
+                view.message = view.rawMessage = null;
+                view.receivedAt = null;
+                view.dataError = "Malformed sensor message";
+                return;
+            }
+            view.message = decoded;
+            view.rawMessage = message;
             view.receivedAt = performance.now();
             view.count++;
             view.error = null;
+            view.dataError = null;
         },
         onTopicError(topic, error) {
             views.get(topic).error = error;
@@ -162,6 +201,7 @@ if (telemetryContainer) {
 
     function format(value, names) {
         if (value === undefined || value === null) return "Not provided";
+        if (typeof names === "function") return names(value);
         if (names) return `${names[value] ?? "Unknown"} (${value})`;
         if (typeof value === "object") return JSON.stringify(value);
         return String(value) || "(empty)";
@@ -171,18 +211,20 @@ if (telemetryContainer) {
         const now = performance.now();
         for (const view of views.values()) {
             const age = view.receivedAt === null ? null : now - view.receivedAt;
-            const live = connectionState === "connected" && age !== null && age <= 1000 && !view.error;
-            view.section.dataset.state = live ? "live" : age !== null ? "stale" : "waiting";
+            const live = connectionState === "connected" && age !== null && age <= (view.group.staleMs || 1000) && !view.error && !view.dataError;
+            const fault = live && view.group.isFault?.(view.message);
+            view.section.dataset.state = fault ? "fault" : live ? "live" : age !== null ? "stale" : "waiting";
             view.health.textContent = view.error ? `Subscription error: ${view.error}`
+                : view.dataError ? `Data error: ${view.dataError}`
                 : connectionState !== "connected" ? "rosbridge disconnected"
                 : age === null ? "Waiting for messages — publisher or data not yet observed"
-                : `${live ? "Live" : "Stale — showing last received values"} · ${view.count} messages · last received ${(age / 1000).toFixed(1)}s ago`;
+                : `${fault ? "Sensor reports a fault" : live ? "Live" : "Stale — showing last received values"} · ${view.count} messages · last received ${(age / 1000).toFixed(1)}s ago`;
             for (const field of view.fieldViews) {
                 field.element.textContent = view.message
                     ? format(valueAt(view.message, field.path), field.names) : "No data";
             }
             if (view.raw.parentElement.open || view.count <= 1) {
-                view.raw.textContent = view.message ? JSON.stringify(view.message, null, 2) : "No message received";
+                view.raw.textContent = view.rawMessage ? JSON.stringify(view.rawMessage, null, 2) : "No message received";
             }
         }
         const heartbeat = views.get("/carl/heartbeat");

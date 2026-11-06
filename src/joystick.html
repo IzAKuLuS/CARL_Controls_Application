@@ -14,16 +14,10 @@
     <script src="passcodes.js" defer></script>
     <script src="auth.js" defer></script>
 
-    <!-- This is the joystick library used by the MARVIN application. -->
-    <script
-        src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.2/nipplejs.min.js"
-        defer>
-    </script>
-
     <!-- Deferred scripts execute in their listed order. -->
-    <script src="ros-client.js" defer></script>
-    <script src="app.js" defer></script>
     <script src="joystick-client.js" defer></script>
+    <script src="joystick-diagnostics.js" defer></script>
+    <script src="joystick-input.js" defer></script>
     <script src="joystick-ui.js" defer></script>
 </head>
 
@@ -46,13 +40,19 @@
         </form>
         <p id="joystick-status" role="status">Joystick disconnected. Connect to drive.</p>
         <p id="joystick-link">Last reply: — ms · Input pauses: 0 · Reconnect attempts: 0</p>
+        <p id="joystick-log-status" role="status">Browser diagnostics are recorded while this page is open.</p>
+        <button id="joystick-export-log" class="button" type="button">Download browser log</button>
+        <label for="joystick-test-note">Test note</label>
+        <input id="joystick-test-note" type="text" maxlength="1000" placeholder="e.g. Starting incline test">
+        <button id="joystick-save-note" class="button" type="button">Add note to log</button>
         <div class="connection-actions">
             <button id="joystick-estop" class="button estop" type="button" disabled>E-STOP</button>
             <button id="joystick-reset-estop" class="button" type="button" disabled>Reset e-stop</button>
         </div>
 
-        <!-- The library draws the joystick inside this area. -->
-        <div id="joystick-zone" aria-label="Touch joystick"></div>
+        <div id="joystick-zone" aria-label="Touch joystick">
+            <div class="joystick-base" aria-hidden="true"><div id="joystick-knob"></div></div>
+        </div>
 
         <!-- These numbers show input only, not vehicle measurements. -->
         <p class="joystick-values">
@@ -61,20 +61,16 @@
             Vertical: <span id="joystick-y">0.00</span>
         </p>
 
-        <h2>CARL telemetry</h2>
-        <p>Telemetry and joystick connections are independent. Joystick driving requires
-            the server to receive live CARL heartbeat and motor status.</p>
-        <form id="ros-connection-form" class="ros-connection-form">
-            <label for="rosbridge-url">rosbridge WebSocket address</label>
-            <input id="rosbridge-url" type="url" required spellcheck="false" placeholder="ws://localhost:9090">
-            <div class="connection-actions">
-                <button class="button" type="submit">Connect</button>
-                <button id="ros-disconnect" class="button" type="button">Disconnect</button>
-            </div>
-        </form>
-        <p id="ros-connection-status" role="status">Not connected</p>
-        <p id="carl-connection-status">CARL heartbeat: unknown</p>
-        <div id="telemetry-sections"></div>
+        <p class="joystick-values">
+            Commanded left: <span id="joystick-left">0.0%</span>
+            | Right: <span id="joystick-right">0.0%</span>
+            | Wheel command limit: <span id="joystick-limit">—</span>
+        </p>
+        <p>Throttle rises gently at low and medium stick positions, reaching the
+            configured maximum at full travel. A small 5% center deadzone holds zero.
+            Percentages are server wheel commands, not measured speed or motor feedback.
+            Reverse commands are negative.</p>
+
     </main>
 </body>
 </html>

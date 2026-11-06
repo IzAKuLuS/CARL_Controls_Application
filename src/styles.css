@@ -124,6 +124,36 @@ p {
     touch-action: none;
 }
 
+/* Keep iOS copy/lookup/drag UI out of this hold-to-drive control only. */
+#joystick-zone, #joystick-zone * {
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-user-drag: none;
+}
+
+.joystick-base {
+    position: absolute;
+    left: calc(50% - 75px);
+    top: calc(50% - 75px);
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background: #8888;
+    pointer-events: none;
+}
+
+#joystick-knob {
+    position: absolute;
+    left: 37.5px;
+    top: 37.5px;
+    width: 75px;
+    height: 75px;
+    border-radius: 50%;
+    background: #888;
+}
+
 .joystick-values {
     text-align: center;
 }
@@ -171,6 +201,8 @@ button.button:disabled, .login-form input:disabled { opacity: .5; cursor: not-al
 .connection-actions { display: flex; flex-wrap: wrap; gap: 12px; }
 .telemetry-section[data-state="live"] { border-left: 4px solid #72ca96; }
 .telemetry-section[data-state="stale"] { border-left: 4px solid #ecc66c; }
+.telemetry-section[data-state="fault"] { border-left: 4px solid #ff7777; }
+.telemetry-note { color: #bbb; font-size: 14px; }
 [data-state="live"]#ros-connection-status,
 [data-state="live"]#carl-connection-status { color: #72ca96; }
 .telemetry-row dd { overflow-wrap: anywhere; max-width: 100%; }

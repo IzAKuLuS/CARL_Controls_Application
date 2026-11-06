@@ -72,7 +72,7 @@
                             topic: topic.topic, type: topic.type,
                             // The screen renders at 10 Hz. Keep only the newest
                             // sample per interval instead of competing with
-                            // joystick traffic for every high-rate IMU sample.
+                            // joystick traffic for every high-rate telemetry sample.
                             compression: "none", throttle_rate: 100, queue_length: 1
                         }));
                     }

@@ -41,7 +41,7 @@ function setup() {
     const client = new CarlRosClient({
         topics: [
             { topic: "/carl/heartbeat", type: "carl_msgs/msg/CarlHeartbeat" },
-            { topic: "/carl/imu", type: "sensor_msgs/msg/Imu" }
+            { topic: "/carl/encoders", type: "carl_msgs/msg/CarlEncoderFeedback" }
         ],
         WebSocketClass: Socket,
         setTimer(callback, delay) { const id = ++timerId; timers.set(id, { callback, delay }); return id; },
@@ -129,8 +129,8 @@ test("subscription errors identify affected topic", () => {
     const s = setup();
     s.client.connect("ws://localhost:9090");
     s.sockets[0].onopen();
-    s.sockets[0].receive({ op: "status", level: "error", id: "telemetry:/carl/imu", msg: "Unknown message type" });
-    assert.deepEqual(s.errors, [["/carl/imu", "Unknown message type"]]);
+    s.sockets[0].receive({ op: "status", level: "error", id: "telemetry:/carl/encoders", msg: "Unknown message type" });
+    assert.deepEqual(s.errors, [["/carl/encoders", "Unknown message type"]]);
 });
 
 test("rejects invalid endpoints and mixed secure/insecure connections", () => {
